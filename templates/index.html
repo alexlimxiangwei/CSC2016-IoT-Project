@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M5StickCPlus Sensor Data</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function updateData() {
+            $.getJSON('/data', function(data) {
+                $('#acceleration').text(data.acceleration);
+                $('#step-count').text(data.step_count);
+                $('#fall-detected').text(data.fall_detected);
+                $('#emergency').text(data.emergency);
+            });
+        }
+
+        $(document).ready(function() {
+            setInterval(updateData, 1000);  // Update every second
+        });
+    </script>
+</head>
+<body>
+    <h1>M5StickCPlus Sensor Data</h1>
+    <p>Acceleration: <span id="acceleration"></span></p>
+    <p>Step Count: <span id="step-count"></span></p>
+    <p>Fall Detected: <span id="fall-detected"></span></p>
+    <p>Emergency: <span id="emergency"></span></p>
+</body>
+</html>
