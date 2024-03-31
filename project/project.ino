@@ -13,20 +13,26 @@ WiFiServer server(serverPort);
 const float FALL_THRESHOLD = 5; // Adjust this value based on your requirements
 bool fallDetected = false;
 
+// Emergency variable
+bool emergency = false;
+
+// Alert variable
+bool alert = false;
+
 // Step counting variables
 const float STEP_THRESHOLD = 0.6; // Adjust this value based on your requirements
 int stepCount = 0;
 float previousAccelY = 0;
 bool stepDetected = false;
 
-// Emergency variable
-bool emergency = false;
 
 void setup() {
   M5.begin();
   M5.IMU.Init();
   M5.IMU.SetGyroFsr(M5.IMU.GFS_2000DPS);
   M5.IMU.SetAccelFsr(M5.IMU.AFS_16G);
+  pinMode(M5_LED, OUTPUT);
+  digitalWrite (M5_LED, HIGH);
 
   // Initialize WiFi and BLE
   WiFi.begin(ssid, password);
@@ -111,6 +117,19 @@ void loop() {
       fallDetected = false;
       String response = "fallDetected state: " + String(fallDetected);
       M5.Lcd.print("fallDetected state: " + String(fallDetected));
+      sendResponse(client, response);
+    } else if (request.startsWith("POST /toggle_alert")) {
+      // Handle POST request to toggle alert state
+      alert = !alert;
+      String response = "Alert state: " + String(alert);
+      
+      // Toggle the LED light based on the alert state
+      if (alert) {
+          digitalWrite (M5_LED, LOW);
+      } else {
+        digitalWrite (M5_LED, HIGH);
+      }
+      
       sendResponse(client, response);
     } else {
       // Handle invalid requests

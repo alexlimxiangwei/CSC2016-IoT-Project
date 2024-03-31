@@ -60,5 +60,10 @@ def reset_values():
     return 'OK'
 
 
+@app.route('/toggle_alert', methods=['POST'])
+def toggle_alert():
+    requests.post(f'http://{M5StickCPlus_IP_address}/toggle_alert')
+
+
 if __name__ == '__main__':
     app.run(debug=True)
