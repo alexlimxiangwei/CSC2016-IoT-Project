@@ -1,15 +1,86 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>M5StickCPlus Sensor Data</title>
+    <title>High-Risk Individual Monitoring</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .data-item {
+            margin-bottom: 20px;
+        }
+        .data-label {
+            font-weight: bold;
+            color: #333;
+        }
+        .data-value {
+            margin-left: 10px;
+            color: #666;
+        }
+        .reset-button {
+            background-color: #ff5252;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .alert-button {
+            background-color: #ff9800;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+            position: relative;
+        }
+        .alert-button:hover {
+            background-color: #f57c00;
+        }
+        .alert-button:hover::after {
+            content: attr(data-hover-text);
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+    </style>
     <script>
+        var alertActive = false;
+
         function updateData() {
             $.getJSON('/data', function(data) {
                 $('#acceleration').text(data.acceleration);
                 $('#step-count').text(data.step_count);
                 $('#fall-detected').text(data.fall_detected);
                 $('#emergency').text(data.emergency);
+                updateAlertButtonText(data.alert);
             });
         }
 
@@ -19,16 +90,46 @@
             });
         }
 
+        function toggleValue() {
+        alertActive = !alertActive;
+        updateAlertButtonText();
+        $.post('/toggle_alert', { alert: alertActive });
+        }
+
+         function updateAlertButtonText() {
+            var buttonText = alertActive ? 'Deactivate Alert' : 'Activate Alert';
+            var hoverText = alertActive ? 'Click to turn off the LED light on the M5StickCPlus' : 'Click to turn on the LED light on the M5StickCPlus';
+            $('.alert-button').text(buttonText).attr('data-hover-text', hoverText);
+        }
+
+
         $(document).ready(function() {
             setInterval(updateData, 1000);  // Update every second
         });
     </script>
 </head>
 <body>
-    <h1>M5StickCPlus Sensor Data</h1>
-    <p>Acceleration: <span id="acceleration"></span></p>
-    <p>Step Count: <span id="step-count"></span></p>
-    <p>Fall Detected: <span id="fall-detected"></span> <button onclick="resetValue('fall_detected')">Reset</button></p>
-    <p>Emergency: <span id="emergency"></span> <button onclick="resetValue('emergency')">Reset</button></p>
+    <div class="container">
+        <h1>High-Risk Individual Monitoring</h1>
+        <div class="data-item">
+            <span class="data-label">Acceleration:</span>
+            <span class="data-value" id="acceleration"></span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">Step Count:</span>
+            <span class="data-value" id="step-count"></span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">Fall Detected:</span>
+            <span class="data-value" id="fall-detected"></span>
+            <button class="reset-button" onclick="resetValue('fall')">Reset</button>
+        </div>
+        <div class="data-item">
+            <span class="data-label">Emergency:</span>
+            <span class="data-value" id="emergency"></span>
+            <button class="reset-button" onclick="resetValue('emergency')">Reset</button>
+        </div>
+        <button class="alert-button" onclick="toggleValue()" data-hover-text="Click to turn on the LED light on the M5StickCPlus">Activate Alert</button>
+    </div>
 </body>
 </html>

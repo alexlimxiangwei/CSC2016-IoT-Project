@@ -55,13 +55,7 @@ def get_data():
 @app.route('/reset', methods=['POST'])
 def reset_values():
     reset_type = request.form['type']
-
-    if reset_type == 'fall_detected':
-        # Reset the fall detected value on M5StickCPlus
-        requests.post(f'http://{M5StickCPlus_IP_address}/fall')
-    elif reset_type == 'emergency':
-        # Reset the emergency value on M5StickCPlus
-        requests.post(f'http://{M5StickCPlus_IP_address}/emergency')
+    requests.post(f'http://{M5StickCPlus_IP_address}/{reset_type}')  # Reset fall / emergency state
 
     return 'OK'
 
