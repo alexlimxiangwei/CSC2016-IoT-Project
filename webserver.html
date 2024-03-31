@@ -4,7 +4,7 @@
   <title>M5 Stick Plus Sensor Data</title>
   <script>
     function getData() {
-      fetch('http://192.168.132.77/data') // Replace with the M5 Stick Plus's IP address
+      fetch('http://192.168.116.77/data') // Replace with the M5 Stick Plus's IP address
         .then(response => response.text())
         .then(data => {
           document.getElementById('data').innerText = data;
