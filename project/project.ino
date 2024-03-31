@@ -103,8 +103,14 @@ void loop() {
       sendResponse(client, response);
     } else if (request.startsWith("POST /emergency")) {
       // Handle POST request to toggle emergency state
-      emergency = !emergency;
+      emergency = false;
       String response = "Emergency state: " + String(emergency);
+      sendResponse(client, response);
+    } else if (request.startsWith("POST /fall")) {
+      // Handle POST request to toggle emergency state
+      fallDetected = false;
+      String response = "fallDetected state: " + String(fallDetected);
+      M5.Lcd.print("fallDetected state: " + String(fallDetected));
       sendResponse(client, response);
     } else {
       // Handle invalid requests

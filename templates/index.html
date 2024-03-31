@@ -13,6 +13,12 @@
             });
         }
 
+        function resetValue(type) {
+            $.post('/reset', { type: type }, function() {
+                updateData();
+            });
+        }
+
         $(document).ready(function() {
             setInterval(updateData, 1000);  // Update every second
         });
@@ -22,7 +28,7 @@
     <h1>M5StickCPlus Sensor Data</h1>
     <p>Acceleration: <span id="acceleration"></span></p>
     <p>Step Count: <span id="step-count"></span></p>
-    <p>Fall Detected: <span id="fall-detected"></span></p>
-    <p>Emergency: <span id="emergency"></span></p>
+    <p>Fall Detected: <span id="fall-detected"></span> <button onclick="resetValue('fall_detected')">Reset</button></p>
+    <p>Emergency: <span id="emergency"></span> <button onclick="resetValue('emergency')">Reset</button></p>
 </body>
 </html>

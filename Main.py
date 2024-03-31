@@ -1,5 +1,5 @@
 import requests
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 
 M5StickCPlus_IP_address = '192.168.116.77'  # change to your M5StickCPlus IP address
 
@@ -51,6 +51,19 @@ def get_data():
         'fall_detected': fall_detected,
         'emergency': emergency
     })
+
+@app.route('/reset', methods=['POST'])
+def reset_values():
+    reset_type = request.form['type']
+
+    if reset_type == 'fall_detected':
+        # Reset the fall detected value on M5StickCPlus
+        requests.post(f'http://{M5StickCPlus_IP_address}/fall')
+    elif reset_type == 'emergency':
+        # Reset the emergency value on M5StickCPlus
+        requests.post(f'http://{M5StickCPlus_IP_address}/emergency')
+
+    return 'OK'
 
 
 if __name__ == '__main__':
