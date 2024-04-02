@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>M5StickC Plus Devices</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            function fetchData() {
+                $.get("/data", function(data) {
+                    $("#devices").empty();
+                    $.each(data, function(device_id, sensor_data) {
+                        $("#devices").append(`<li>${device_id}: ${JSON.stringify(sensor_data)}</li>`);
+                    });
+                });
+            }
+            fetchData(); // Fetch data on page load
+            setInterval(fetchData, 5000); // Poll for new data every 5 seconds
+        });
+    </script>
+</head>
+<body>
+    <h1>Connected M5StickC Plus Devices</h1>
+    <ul id="devices">
+        <!-- Device data will be listed here -->
+    </ul>
+</body>
+</html>
