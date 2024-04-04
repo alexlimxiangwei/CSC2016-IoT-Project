@@ -1,6 +1,7 @@
 #include <M5StickCPlus.h>
 #include <WiFi.h>
 #include <BLEDevice.h>
+#include <PubSubClient.h>
 
 // WiFi and BLE configuration
 const char* ssid = "alix";
@@ -25,6 +26,13 @@ int stepCount = 0;
 float previousAccelY = 0;
 bool stepDetected = false;
 
+// MQTT setup
+const char* mqttServer = "your_mqtt_broker_ip";
+const int mqttPort = 1883;
+const char* registrationTopic = "m5stick/registration";
+
+WiFiClient espClient;
+PubSubClient pubSubClient(espClient);
 
 void setup() {
   M5.begin();
@@ -44,9 +52,21 @@ void setup() {
   M5.Lcd.print("Server started. IP: ");
   M5.Lcd.println(WiFi.localIP());
 
-  // BLEDevice::init(bleServerName);
-  // Set up BLE server and characteristics
-  // ...
+    pubSubClient.setServer(mqttServer, mqttPort);
+  while (!pubSubClient.connected()) {
+    if (pubSubClient.connect("M5StickClient")) {
+      M5.Lcd.println("Connected to MQTT broker");
+    } else {
+      M5.Lcd.print("Failed to connect to MQTT broker, rc=");
+      M5.Lcd.println(client.state());
+      delay(1000);
+    }
+  }
+
+  String deviceName = "M5StickPlus";
+  String ipAddress = WiFi.localIP().toString();
+  String message = deviceName + "," + ipAddress;
+  pubSubClient.publish(mqttTopic, message.c_str());
 }
 
 
