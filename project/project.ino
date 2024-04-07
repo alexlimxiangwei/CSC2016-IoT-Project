@@ -27,9 +27,10 @@ float previousAccelY = 0;
 bool stepDetected = false;
 
 // MQTT setup
-const char* mqttServer = "your_mqtt_broker_ip";
+const char* mqttServer = "192.168.116.30";
 const int mqttPort = 1883;
 const char* registrationTopic = "m5stick/registration";
+String deviceName = "M5StickPlus2";
 
 WiFiClient espClient;
 PubSubClient pubSubClient(espClient);
@@ -52,21 +53,21 @@ void setup() {
   M5.Lcd.print("Server started. IP: ");
   M5.Lcd.println(WiFi.localIP());
 
-    pubSubClient.setServer(mqttServer, mqttPort);
+  pubSubClient.setServer(mqttServer, mqttPort);
   while (!pubSubClient.connected()) {
     if (pubSubClient.connect("M5StickClient")) {
       M5.Lcd.println("Connected to MQTT broker");
     } else {
       M5.Lcd.print("Failed to connect to MQTT broker, rc=");
-      M5.Lcd.println(client.state());
+     M5.Lcd.println(pubSubClient.state());
       delay(1000);
     }
   }
 
-  String deviceName = "M5StickPlus";
+ 
   String ipAddress = WiFi.localIP().toString();
   String message = deviceName + "," + ipAddress;
-  pubSubClient.publish(mqttTopic, message.c_str());
+  pubSubClient.publish(registrationTopic, message.c_str());
 }
 
 

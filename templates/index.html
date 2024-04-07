@@ -72,36 +72,38 @@
         }
     </style>
     <script>
-        var alertActive = false;
+        var alertActive = {};
 
         function updateData() {
             $.getJSON('/data', function(data) {
-                $('#acceleration').text(data.acceleration);
-                $('#step-count').text(data.step_count);
-                $('#fall-detected').text(data.fall_detected);
-                $('#emergency').text(data.emergency);
-                updateAlertButtonText(data.alert);
+                for (var i = 0; i < data.length; i++) {
+                    var deviceName = data[i].device_name;
+                    $('#acceleration-' + deviceName).text(data[i].acceleration);
+                    $('#step-count-' + deviceName).text(data[i].step_count);
+                    $('#fall-detected-' + deviceName).text(data[i].fall_detected);
+                    $('#emergency-' + deviceName).text(data[i].emergency);
+                    updateAlertButtonText(deviceName, data[i].alert);
+                }
             });
         }
 
-        function resetValue(type) {
-            $.post('/reset', { type: type }, function() {
+        function resetValue(deviceIp, type) {
+            $.post('/reset', { device_ip: deviceIp, type: type }, function() {
                 updateData();
             });
         }
 
-        function toggleValue() {
-        alertActive = !alertActive;
-        updateAlertButtonText();
-        $.post('/toggle_alert', { alert: alertActive });
+        function toggleValue(deviceName, deviceIp) {
+            alertActive[deviceName] = !alertActive[deviceName];
+            updateAlertButtonText(deviceName);
+            $.post('/toggle_alert', { device_name: deviceName, alert: alertActive[deviceName], device_ip: deviceIp });
         }
 
-         function updateAlertButtonText() {
-            var buttonText = alertActive ? 'Deactivate Alert' : 'Activate Alert';
-            var hoverText = alertActive ? 'Click to turn off the LED light on the M5StickCPlus' : 'Click to turn on the LED light on the M5StickCPlus';
-            $('.alert-button').text(buttonText).attr('data-hover-text', hoverText);
+        function updateAlertButtonText(deviceName, alertState) {
+            var buttonText = alertState ? 'Deactivate Alert' : 'Activate Alert';
+            var hoverText = alertState ? 'Click to turn off the LED light on ' + deviceName : 'Click to turn on the LED light on ' + deviceName;
+            $('#alert-button-' + deviceName).text(buttonText).attr('data-hover-text', hoverText);
         }
-
 
         $(document).ready(function() {
             setInterval(updateData, 1000);  // Update every second
@@ -109,27 +111,30 @@
     </script>
 </head>
 <body>
+    <h1>High-Risk Individual Monitoring</h1>
+    {% for device in device_data %}
     <div class="container">
-        <h1>High-Risk Individual Monitoring</h1>
+        <h2>{{ device.device_name }}</h2>
         <div class="data-item">
             <span class="data-label">Acceleration:</span>
-            <span class="data-value" id="acceleration"></span>
+            <span class="data-value" id="acceleration-{{ device.device_name }}">{{ device.acceleration }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Step Count:</span>
-            <span class="data-value" id="step-count"></span>
+            <span class="data-value" id="step-count-{{ device.device_name }}">{{ device.step_count }}</span>
         </div>
         <div class="data-item">
             <span class="data-label">Fall Detected:</span>
-            <span class="data-value" id="fall-detected"></span>
-            <button class="reset-button" onclick="resetValue('fall')">Reset</button>
+            <span class="data-value" id="fall-detected-{{ device.device_name }}">{{ device.fall_detected }}</span>
+            <button class="reset-button" onclick="resetValue('{{ device.device_ip }}', 'fall')">Reset</button>
         </div>
         <div class="data-item">
             <span class="data-label">Emergency:</span>
-            <span class="data-value" id="emergency"></span>
-            <button class="reset-button" onclick="resetValue('emergency')">Reset</button>
+            <span class="data-value" id="emergency-{{ device.device_name }}">{{ device.emergency }}</span>
+            <button class="reset-button" onclick="resetValue('{{ device.device_ip }}', 'emergency')">Reset</button>
         </div>
-        <button class="alert-button" onclick="toggleValue()" data-hover-text="Click to turn on the LED light on the M5StickCPlus">Activate Alert</button>
+        <button class="alert-button" id="alert-button-{{ device.device_name }}" onclick="toggleValue('{{ device.device_name }}', '{{ device.device_ip }}')" data-hover-text="Click to turn on the LED light on {{ device.device_name }}">Activate Alert</button>
     </div>
+    {% endfor %}
 </body>
 </html>
