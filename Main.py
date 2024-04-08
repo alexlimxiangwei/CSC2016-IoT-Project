@@ -1,4 +1,4 @@
-from queue import Queue
+from queue import Queue, Empty
 
 import requests
 from flask import Flask, render_template, jsonify, request, Response
@@ -18,6 +18,11 @@ registered_devices = []
 # registered_devices = [('TestStick1', TestStick1_IP_address)]
 message_queue = Queue()
 
+try:
+    while True:
+        message_queue.get_nowait()
+except Empty:
+    pass
 
 def on_connect(client, userdata, flags, rc, properties):
     print("Connected to MQTT broker")

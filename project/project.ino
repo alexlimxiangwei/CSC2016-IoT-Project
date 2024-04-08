@@ -38,21 +38,42 @@ PubSubClient pubSubClient(espClient);
 
 volatile unsigned long btnPressTime = 0;
 bool btnPreviouslyPressed = false;
+bool emergencyUpdated = false;
+
+const unsigned long keepAliveInterval = 30000; // 30 seconds
+unsigned long lastKeepAliveTime = 0;
 
 void IRAM_ATTR handleBtnPress() {
     emergency = true; // Set emergency to true immediately upon button press
+}
 
-    M5.Lcd.fillScreen(BLACK);
-    M5.Lcd.setTextColor(WHITE);
-    M5.Lcd.setRotation(3);
-    M5.Lcd.setTextSize(2);
-    M5.Lcd.setCursor(10, 20);
-    M5.Lcd.println("EMERGENCY");
-    M5.Lcd.setCursor(10, 50);
-    M5.Lcd.println("ACTIVATED");
+void sendKeepAlive() {
+    if (millis() - lastKeepAliveTime > keepAliveInterval) {
+        String keepAliveMessage = "keepalive";
+        pubSubClient.publish((ipAddress + "/keepalive").c_str(), keepAliveMessage.c_str());
+        lastKeepAliveTime = millis();
+    }
+}
 
-    digitalWrite (M5_LED, LOW);
-    btnPressTime = millis();
+void reconnect() {
+    // Loop until we're reconnected
+    while (!pubSubClient.connected()) {
+        M5.Lcd.println("Attempting MQTT connection...");
+        // Attempt to connect
+        if (pubSubClient.connect("M5StickClient")) {
+            M5.Lcd.println("MQTT connected");
+            // Resubscribe or republish here if necessary
+        } else {
+            M5.Lcd.print("MQTT connection failed, rc=");
+            M5.Lcd.print(pubSubClient.state());
+            M5.Lcd.println(" try again in 5 seconds");
+            // Wait 5 seconds before retrying
+            delay(5000);
+        }
+    }
+    ipAddress = WiFi.localIP().toString();
+    String message = deviceName + "," + ipAddress;
+    pubSubClient.publish(registrationTopic, message.c_str());
 }
 
 void setup() {
@@ -148,8 +169,33 @@ void sendResponse(WiFiClient& client, const String& response, const String& cont
 
 
 void loop() {
+
+  if (!pubSubClient.connected()) {
+        // Reconnect logic here
+    } else {
+        pubSubClient.loop(); // Make sure to call this regularly to process incoming messages and maintain the connection
+        sendKeepAlive();
+  }
+
   //Update Fall and Emergency every loop
   updateFallDetection();
+
+  if (emergency && !emergencyUpdated){
+
+    pubSubClient.publish((ipAddress + "/emergency").c_str(), String(emergency).c_str());
+
+    M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.setTextColor(WHITE);
+    M5.Lcd.setRotation(3);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setCursor(10, 20);
+    M5.Lcd.println("EMERGENCY");
+    M5.Lcd.setCursor(10, 50);
+    M5.Lcd.println("ACTIVATED");
+
+    digitalWrite (M5_LED, LOW);
+    emergencyUpdated = true;
+  }
 
 
   bool btnPressed = digitalRead(M5_BUTTON_HOME) == LOW;
@@ -162,6 +208,8 @@ void loop() {
         // The button has been held for more than 1 second
         if (emergency) {
           emergency = false; // Deactivate emergency state
+          pubSubClient.publish((ipAddress + "/emergency").c_str(), String(emergency).c_str());
+          emergencyUpdated = false;
           
           M5.Lcd.fillScreen(BLACK);
           M5.Lcd.setTextColor(WHITE);
