@@ -147,7 +147,7 @@ void updateFallDetection(){
   // Track whether we've seen a positive motion, indicating the start of a potential step
   static bool positiveMotionDetected = false;
 
-  if (!stepDetected && (millis() - timeSinceLastStep > 300)) {
+  if (!stepDetected && (millis() - timeSinceLastStep > 500)) {
       if (accelDiff > POSITIVE_STEP_THRESHOLD) {
           positiveMotionDetected = true;
       } else if (positiveMotionDetected && accelDiff < NEGATIVE_STEP_THRESHOLD) {
@@ -169,8 +169,9 @@ void updateFallDetection(){
   } else if (stepDetected && accelDiff > NEGATIVE_STEP_THRESHOLD) {
       stepDetected = false; // Ready to detect the next step
   }
-
-  previousAccelY = accelY;
+  if (millis() - timeSinceLastStep > 50){
+    previousAccelY = accelY;
+  }
 
 }
 
