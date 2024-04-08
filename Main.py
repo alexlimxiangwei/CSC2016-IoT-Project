@@ -1,8 +1,10 @@
+from queue import Queue
+
 import requests
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, Response
 import paho.mqtt.client as mqtt
 
-TestStick1_IP_address = '192.168.116.77'  # change to your M5StickCPlus IP address
+# TestStick1_IP_address = '192.168.116.77'  # change to your M5StickCPlus IP address
 
 # MQTT setup
 mqtt_broker = "localhost"
@@ -14,6 +16,7 @@ registered_devices = []
 # Uncomment below for testing:
 # stick names cant have spacebar lol
 # registered_devices = [('TestStick1', TestStick1_IP_address)]
+message_queue = Queue()
 
 
 def on_connect(client, userdata, flags, rc, properties):
@@ -22,11 +25,19 @@ def on_connect(client, userdata, flags, rc, properties):
 
 
 def on_message(client, userdata, msg):
-    device_info = msg.payload.decode().split(",")
-    device_name = device_info[0]
-    device_ip = device_info[1]
-    registered_devices.append((device_name, device_ip))
-    print(f"Registered device: {device_name} - IP: {device_ip}")
+    if msg.topic == registration_topic:
+        device_info = msg.payload.decode().split(",")
+        device_name = device_info[0]
+        device_ip = device_info[1]
+        registered_devices.append((device_name, device_ip))
+        print(f"Registered device: {device_name} - IP: {device_ip}")
+        client.subscribe(f"{device_ip}/emergency")
+        client.subscribe(f"{device_ip}/fall")
+    else:
+        print(f"Received message: {msg.topic} - {msg.payload}")
+        device_ip = msg.topic.split("/")[0]
+        value = msg.payload.decode()
+        message_queue.put((device_ip, msg.topic.split("/")[-1], value))
 
 
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
@@ -36,7 +47,7 @@ mqtt_client.on_message = on_message
 # # Retrieve sensor data
 # response = requests.get(f'http://{M5StickCPlus_IP_address}/data')
 # print(response.text)
-#
+
 # # Toggle emergency state
 # response = requests.post(f'http://{M5StickCPlus_IP_address}/emergency')
 # print(response.text)
@@ -53,14 +64,16 @@ def index():
         acceleration = data.split('Acceleration: ')[1].split('\n')[0]
         step_count = data.split('Step Count: ')[1].split('\n')[0]
         fall_detected = data.split('Fall Detected: ')[1].split('\n')[0]
-        emergency = data.split('Emergency: ')[1].strip()
+        emergency = data.split('Emergency: ')[1].strip('\n')[0]
+        alert = data.split('Alert: ')[1].strip()
         device_data.append({
             'device_ip': device_ip,
             'device_name': device_name,
             'acceleration': acceleration,
             'step_count': step_count,
             'fall_detected': fall_detected,
-            'emergency': emergency
+            'emergency': emergency,
+            'alert': alert,
         })
     return render_template('index.html', device_data=device_data)
 
@@ -74,14 +87,16 @@ def get_data():
         acceleration = data.split('Acceleration: ')[1].split('\n')[0]
         step_count = data.split('Step Count: ')[1].split('\n')[0]
         fall_detected = data.split('Fall Detected: ')[1].split('\n')[0]
-        emergency = data.split('Emergency: ')[1].strip()
+        emergency = data.split('Emergency: ')[1].strip('\n')[0]
+        alert = data.split('Alert: ')[1].strip()
         device_data.append({
             'device_ip': device_ip,
             'device_name': device_name,
             'acceleration': acceleration,
             'step_count': step_count,
             'fall_detected': fall_detected,
-            'emergency': emergency
+            'emergency': emergency,
+            'alert': alert,
         })
     return jsonify(device_data)
 
@@ -97,11 +112,20 @@ def reset_values():
 @app.route('/toggle_alert', methods=['POST'])
 def toggle_alert():
     device_ip = request.form['device_ip']
-    print(device_ip)
-
     response = requests.post(f'http://{device_ip}/toggle_alert')
     print(response.text)
     return 'OK'
+
+
+@app.route('/stream')
+def stream():
+    def event_stream():
+        while True:
+            if not message_queue.empty():
+                device_ip, event, value = message_queue.get()
+                print(f"Sending event: {device_ip}, {event}, {value}")
+                yield f"data: {device_ip},{event},{value}\n\n"
+    return Response(event_stream(), mimetype="text/event-stream")
 
 
 if __name__ == '__main__':

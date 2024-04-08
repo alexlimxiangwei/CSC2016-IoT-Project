@@ -31,6 +31,7 @@ const char* mqttServer = "192.168.4.49";
 const int mqttPort = 1883;
 const char* registrationTopic = "m5stick/registration";
 String deviceName = "M5StickPlus2";
+String ipAddress;
 
 WiFiClient espClient;
 PubSubClient pubSubClient(espClient);
@@ -87,11 +88,20 @@ void setup() {
   }
 
  
-  String ipAddress = WiFi.localIP().toString();
+  ipAddress = WiFi.localIP().toString();
   String message = deviceName + "," + ipAddress;
   pubSubClient.publish(registrationTopic, message.c_str());
 }
 
+void updateFallDetection(){
+   // Fall detection
+  float ax, ay, az;
+  M5.IMU.getAccelData(&ax, &ay, &az);
+  if (sqrt(ax*ax + ay*ay + az*az) > FALL_THRESHOLD && !fallDetected) {
+    fallDetected = true;
+    pubSubClient.publish((ipAddress + "/fall").c_str(), String(fallDetected).c_str());
+  }
+}
 
 String getSensorData() {
   M5.update();
@@ -101,12 +111,8 @@ String getSensorData() {
   //   emergency = !emergency;
   // }
 
-  // Fall detection
   float ax, ay, az;
   M5.IMU.getAccelData(&ax, &ay, &az);
-  if (sqrt(ax*ax + ay*ay + az*az) > FALL_THRESHOLD) {
-    fallDetected = true;
-  }
 
   // Step counting algorithm
   float accelY = ay;
@@ -126,6 +132,7 @@ String getSensorData() {
   response += "Step Count: " + String(stepCount) + "\n";
   response += "Fall Detected: " + String(fallDetected) + "\n";
   response += "Emergency: " + String(emergency);
+  response += "Alert: " + String(alert);
   return response;
 }
 
@@ -141,6 +148,9 @@ void sendResponse(WiFiClient& client, const String& response, const String& cont
 
 
 void loop() {
+  //Update Fall and Emergency every loop
+  updateFallDetection();
+
 
   bool btnPressed = digitalRead(M5_BUTTON_HOME) == LOW;
   if (btnPressed) {
