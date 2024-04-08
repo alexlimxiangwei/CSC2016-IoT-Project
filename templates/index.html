@@ -73,7 +73,7 @@
     </style>
     <script>
         var alertActive = {};
-
+        var device_data = {{ device_data|tojson }};
         function updateData() {
             $.getJSON('/data', function(data) {
                 for (var i = 0; i < data.length; i++) {
@@ -105,9 +105,33 @@
             $('#alert-button-' + deviceName).text(buttonText).attr('data-hover-text', hoverText);
         }
 
-        $(document).ready(function() {
-            setInterval(updateData, 1000);  // Update every second
+        function handleEvent(event) {
+            var data = event.data.split(',');
+            var deviceIp = data[0];
+            var eventType = data[1];
+            var value = data[2];
+            console.log('Received event:', eventType, 'for device:', deviceIp, 'with value:', value);
+            // Find the device in the registered_devices array
+            var device = device_data.find(function(d) {
+                return d.device_ip === deviceIp;
         });
+        console.log('Device:', device);
+        if (device) {
+            if (eventType === 'emergency') {
+                $('#emergency-' + device.device_name).text(value);
+            } else if (eventType === 'fall') {
+                $('#fall-detected-' + device.device_name).text(value);
+            }
+        }
+}
+
+
+        $(document).ready(function() {
+            setInterval(updateData, 60000);// Update every minutes
+            var eventSource = new EventSource('/stream');
+            eventSource.onmessage = handleEvent;
+        });
+
     </script>
 </head>
 <body>
