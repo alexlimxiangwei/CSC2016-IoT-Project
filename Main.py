@@ -86,25 +86,50 @@ def index():
 
 @app.route('/data')
 def get_data():
-    device_data = []
-    for device_name, device_ip in registered_devices:
-        response = requests.get(f'http://{device_ip}/data')
-        data = response.text
-        acceleration = data.split('Acceleration: ')[1].split('\n')[0]
-        step_count = data.split('Step Count: ')[1].split('\n')[0]
-        fall_detected = data.split('Fall Detected: ')[1].split('\n')[0]
-        emergency = data.split('Emergency: ')[1].strip('\n')[0]
-        alert = data.split('Alert: ')[1].strip()
-        device_data.append({
-            'device_ip': device_ip,
-            'device_name': device_name,
-            'acceleration': acceleration,
-            'step_count': step_count,
-            'fall_detected': fall_detected,
-            'emergency': emergency,
-            'alert': alert,
-        })
-    return jsonify(device_data)
+    device_ip = request.args.get('device_ip')
+    if device_ip:
+        # Get data for a specific device
+        for device_name, registered_device_ip in registered_devices:
+            if registered_device_ip == device_ip:
+                response = requests.get(f'http://{device_ip}/data')
+                data = response.text
+                acceleration = data.split('Acceleration: ')[1].split('\n')[0]
+                step_count = data.split('Step Count: ')[1].split('\n')[0]
+                fall_detected = data.split('Fall Detected: ')[1].split('\n')[0]
+                emergency = data.split('Emergency: ')[1].strip('\n')[0]
+                alert = data.split('Alert: ')[1].strip()
+                device_data = {
+                    'device_ip': device_ip,
+                    'device_name': device_name,
+                    'acceleration': acceleration,
+                    'step_count': step_count,
+                    'fall_detected': fall_detected,
+                    'emergency': emergency,
+                    'alert': alert,
+                }
+                return jsonify(device_data)
+        return jsonify({'error': 'Device not found'})
+    else:
+        # Get data for all devices
+        device_data = []
+        for device_name, device_ip in registered_devices:
+            response = requests.get(f'http://{device_ip}/data')
+            data = response.text
+            acceleration = data.split('Acceleration: ')[1].split('\n')[0]
+            step_count = data.split('Step Count: ')[1].split('\n')[0]
+            fall_detected = data.split('Fall Detected: ')[1].split('\n')[0]
+            emergency = data.split('Emergency: ')[1].strip('\n')[0]
+            alert = data.split('Alert: ')[1].strip()
+            device_data.append({
+                'device_ip': device_ip,
+                'device_name': device_name,
+                'acceleration': acceleration,
+                'step_count': step_count,
+                'fall_detected': fall_detected,
+                'emergency': emergency,
+                'alert': alert,
+            })
+        return jsonify(device_data)
 
 
 @app.route('/reset', methods=['POST'])

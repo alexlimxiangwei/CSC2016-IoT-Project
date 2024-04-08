@@ -4,6 +4,24 @@
     <title>High-Risk Individual Monitoring</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+       .container {
+           position: relative;
+       }
+       .refresh-button {
+           position: absolute;
+           top: 10px;
+           right: 10px;
+           background-color: #4CAF50;
+           color: #fff;
+           border: none;
+           padding: 5px 10px;
+           border-radius: 3px;
+           cursor: pointer;
+           font-size: 14px;
+       }
+       .refresh-button:hover {
+           background-color: #45a049;
+       }
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -90,10 +108,21 @@
                 }
             });
         }
+        function updateDeviceData(deviceIp) {
+            $.getJSON('/data?device_ip=' + deviceIp, function(data) {
+                var deviceName = data.device_name;
+                $('#acceleration-' + deviceName).text(data.acceleration);
+                $('#step-count-' + deviceName).text(data.step_count);
+                $('#fall-detected-' + deviceName).text(data.fall_detected);
+                $('#emergency-' + deviceName).text(data.emergency);
+                updateResetButton(deviceName, data.fall_detected, "reset-fall-" + deviceName);
+                updateResetButton(deviceName, data.emergency, "reset-emergency-" + deviceName);
+            });
+        }
         updateData();
         function resetValue(deviceIp, type) {
             $.post('/reset', { device_ip: deviceIp, type: type }, function() {
-                updateData();
+                updateDeviceData(deviceIp);
             });
         }
 
@@ -137,7 +166,6 @@
             eventSource.onmessage = handleEvent;
         });
 
-        // Function to update the display property of the reset button
         function updateResetButton(deviceName, value, buttonId) {
             var resetButton = document.getElementById(buttonId);
             if (value === '1') {
@@ -147,7 +175,6 @@
             }
         }
 
-        // Add event listener to listen for changes in device values
         document.addEventListener('DOMContentLoaded', function () {
             var deviceData = {{ device_data|tojson }};
             deviceData.forEach(function(device) {
@@ -159,11 +186,11 @@
 
                 // Listen for changes in device values
                 document.getElementById("emergency-" + deviceName).addEventListener('DOMSubtreeModified', function () {
-                    updateResetButton(deviceName, device.emergency, "reset-emergency-" + deviceName);
+                    updateResetButton(deviceName, this.textContent, "reset-emergency-" + deviceName);
                 });
 
                 document.getElementById("fall-detected-" + deviceName).addEventListener('DOMSubtreeModified', function () {
-                    updateResetButton(deviceName, device.fall_detected, "reset-fall-" + deviceName);
+                    updateResetButton(deviceName, this.textContent, "reset-fall-" + deviceName);
                 });
             });
         });
@@ -175,6 +202,7 @@
     {% for device in device_data %}
     <div class="container">
         <h2>{{ device.device_name }}</h2>
+        <button class="refresh-button" onclick="updateDeviceData('{{ device.device_ip }}')">Refresh</button>
         <div class="data-item">
             <span class="data-label">Acceleration:</span>
             <span class="data-value" id="acceleration-{{ device.device_name }}">{{ device.acceleration }}</span>
