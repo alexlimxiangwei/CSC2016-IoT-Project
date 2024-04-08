@@ -315,6 +315,12 @@ void loop() {
       // Toggle the LED light based on the alert state
       if (alert) {
           digitalWrite (M5_LED, LOW);
+          M5.Lcd.fillScreen(BLACK);
+          M5.Lcd.setTextColor(WHITE);
+          M5.Lcd.setRotation(3);
+          M5.Lcd.setTextSize(2);
+          M5.Lcd.setCursor(10, 20);
+          M5.Lcd.println("ALERT!");
       } else {
         digitalWrite (M5_LED, HIGH);
       }
