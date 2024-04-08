@@ -34,10 +34,11 @@ def on_message(client, userdata, msg):
         device_info = msg.payload.decode().split(",")
         device_name = device_info[0]
         device_ip = device_info[1]
-        registered_devices.append((device_name, device_ip))
-        print(f"Registered device: {device_name} - IP: {device_ip}")
-        client.subscribe(f"{device_ip}/emergency")
-        client.subscribe(f"{device_ip}/fall")
+        if (device_name, device_ip) not in registered_devices:
+            registered_devices.append((device_name, device_ip))
+            print(f"Registered device: {device_name} - IP: {device_ip}")
+            client.subscribe(f"{device_ip}/emergency")
+            client.subscribe(f"{device_ip}/fall")
     else:
         print(f"Received message: {msg.topic} - {msg.payload}")
         device_ip = msg.topic.split("/")[0]
