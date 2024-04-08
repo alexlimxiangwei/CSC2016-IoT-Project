@@ -127,11 +127,23 @@ def toggle_alert():
 def stream():
     def event_stream():
         while True:
-            if not message_queue.empty():
-                device_ip, event, value = message_queue.get()
+            try:
+                # Try to get a message from the queue without blocking
+                device_ip, event, value = message_queue.get_nowait()
+                if is_noise((device_ip, event, value)):
+                    continue  # Skip this message if it's considered noise
                 print(f"Sending event: {device_ip}, {event}, {value}")
                 yield f"data: {device_ip},{event},{value}\n\n"
+            except Empty:
+                # The queue is empty; yield a keep-alive comment
+                yield ': keep-alive\n\n'
     return Response(event_stream(), mimetype="text/event-stream")
+
+def is_noise(item):
+    device_ip, event, value = item
+    if event == 'heartbeat':
+        return True
+    return False
 
 
 if __name__ == '__main__':

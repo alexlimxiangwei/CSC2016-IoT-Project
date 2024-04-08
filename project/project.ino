@@ -49,8 +49,9 @@ void IRAM_ATTR handleBtnPress() {
 
 void sendKeepAlive() {
     if (millis() - lastKeepAliveTime > keepAliveInterval) {
-        String keepAliveMessage = "keepalive";
-        pubSubClient.publish((ipAddress + "/keepalive").c_str(), keepAliveMessage.c_str());
+        ipAddress = WiFi.localIP().toString();
+        String message = deviceName + "," + ipAddress;
+        pubSubClient.publish(registrationTopic, message.c_str());
         lastKeepAliveTime = millis();
     }
 }
