@@ -30,7 +30,7 @@ bool stepDetected = false;
 const char* mqttServer = "192.168.116.30";
 const int mqttPort = 1883;
 const char* registrationTopic = "m5stick/registration";
-String deviceName = "M5StickPlus2";
+String deviceName = "M5StickPlus1";
 String ipAddress;
 
 WiFiClient espClient;
