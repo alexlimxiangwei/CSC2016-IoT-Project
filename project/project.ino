@@ -11,7 +11,7 @@ WiFiServer server(serverPort);
 // const char* bleServerName = "M5StickPlus";
 
 // Fall detection threshold and variables
-const float FALL_THRESHOLD = 10; // Adjust this value based on your requirements
+const float FALL_THRESHOLD = 15; // Adjust this value based on your requirements
 bool fallDetected = false;
 
 // Emergency variable
@@ -56,16 +56,6 @@ void sendKeepAlive() {
         String message = deviceName + "," + ipAddress;
         pubSubClient.publish(registrationTopic, message.c_str());
         lastKeepAliveTime = millis();
-
-        if (!emergency && !fallDetected){
-            M5.Lcd.fillScreen(BLACK);
-            M5.Lcd.setTextColor(WHITE);
-            M5.Lcd.setRotation(3);
-            M5.Lcd.setTextSize(2);
-            M5.Lcd.setCursor(10, 20);
-            M5.Lcd.print("Steps: ");
-            M5.Lcd.print(stepCount);
-        }
     }
 }
 
@@ -151,18 +141,27 @@ void updateFallDetection(){
   float accelDiff = accelY - previousAccelY;
 
   // Define both positive and negative thresholds for detecting a step
-  const float POSITIVE_STEP_THRESHOLD = 0.6; // Threshold for the step forward/upward motion
-  const float NEGATIVE_STEP_THRESHOLD = -0.6; // Threshold for the step settling/downward motion
+  const float POSITIVE_STEP_THRESHOLD = 0.4; // Threshold for the step forward/upward motion
+  const float NEGATIVE_STEP_THRESHOLD = -0.4; // Threshold for the step settling/downward motion
 
   // Track whether we've seen a positive motion, indicating the start of a potential step
   static bool positiveMotionDetected = false;
 
-  if (!stepDetected && (millis() - timeSinceLastStep > 500)) {
+  if (!stepDetected && (millis() - timeSinceLastStep > 300)) {
       if (accelDiff > POSITIVE_STEP_THRESHOLD) {
           positiveMotionDetected = true;
       } else if (positiveMotionDetected && accelDiff < NEGATIVE_STEP_THRESHOLD) {
           // A step is detected only after a positive motion followed by a negative motion
           stepCount++;
+          if (!emergency && !fallDetected){
+              M5.Lcd.fillScreen(BLACK);
+              M5.Lcd.setTextColor(WHITE);
+              M5.Lcd.setRotation(3);
+              M5.Lcd.setTextSize(2);
+              M5.Lcd.setCursor(10, 20);
+              M5.Lcd.print("Steps: ");
+              M5.Lcd.print(stepCount);
+          }
           timeSinceLastStep = millis();
           positiveMotionDetected = false; // Reset for the next step detection
           stepDetected = true; // Optional: use this flag for additional logic as needed
