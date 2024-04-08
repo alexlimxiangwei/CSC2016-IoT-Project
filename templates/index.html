@@ -82,7 +82,7 @@
                     $('#step-count-' + deviceName).text(data[i].step_count);
                     $('#fall-detected-' + deviceName).text(data[i].fall_detected);
                     $('#emergency-' + deviceName).text(data[i].emergency);
-                    updateAlertButtonText(deviceName, data[i].alert);
+                    updateAlertButtonText(deviceName, alertActive[deviceName]);
                 }
             });
         }
@@ -95,7 +95,7 @@
 
         function toggleValue(deviceName, deviceIp) {
             alertActive[deviceName] = !alertActive[deviceName];
-            updateAlertButtonText(deviceName);
+            updateAlertButtonText(deviceName, alertActive[deviceName]);
             $.post('/toggle_alert', { device_name: deviceName, alert: alertActive[deviceName], device_ip: deviceIp });
         }
 

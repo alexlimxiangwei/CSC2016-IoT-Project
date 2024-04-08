@@ -13,7 +13,7 @@ registered_devices = []
 
 # Uncomment below for testing:
 # stick names cant have spacebar lol
-# registered_devices = [('TestStick1', TestStick1_IP_address)]
+registered_devices = [('TestStick1', TestStick1_IP_address)]
 
 
 def on_connect(client, userdata, flags, rc, properties):
@@ -97,8 +97,6 @@ def reset_values():
 @app.route('/toggle_alert', methods=['POST'])
 def toggle_alert():
     device_ip = request.form['device_ip']
-    print(device_ip)
-
     response = requests.post(f'http://{device_ip}/toggle_alert')
     print(response.text)
     return 'OK'
