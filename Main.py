@@ -74,14 +74,16 @@ def get_data():
         acceleration = data.split('Acceleration: ')[1].split('\n')[0]
         step_count = data.split('Step Count: ')[1].split('\n')[0]
         fall_detected = data.split('Fall Detected: ')[1].split('\n')[0]
-        emergency = data.split('Emergency: ')[1].strip()
+        emergency = data.split('Emergency: ')[1].strip('\n')[0]
+        alert = data.split('Alert: ')[1].strip()
         device_data.append({
             'device_ip': device_ip,
             'device_name': device_name,
             'acceleration': acceleration,
             'step_count': step_count,
             'fall_detected': fall_detected,
-            'emergency': emergency
+            'emergency': emergency,
+            'alert': alert,
         })
     return jsonify(device_data)
 

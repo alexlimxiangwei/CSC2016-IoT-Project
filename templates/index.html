@@ -82,6 +82,7 @@
                     $('#step-count-' + deviceName).text(data[i].step_count);
                     $('#fall-detected-' + deviceName).text(data[i].fall_detected);
                     $('#emergency-' + deviceName).text(data[i].emergency);
+                    updateAlertButtonText(deviceName, data[i].alert);
                 }
             });
         }

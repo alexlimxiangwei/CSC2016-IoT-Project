@@ -104,6 +104,7 @@ String getSensorData() {
   response += "Step Count: " + String(stepCount) + "\n";
   response += "Fall Detected: " + String(fallDetected) + "\n";
   response += "Emergency: " + String(emergency);
+  response += "Alert: " + String(alert);
   return response;
 }
 
