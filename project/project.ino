@@ -4,8 +4,8 @@
 #include <PubSubClient.h>
 
 // WiFi and BLE configuration
-const char* ssid = "Yikes";
-const char* password = "YeetusDeletus";
+const char* ssid = "alix";
+const char* password = "hottestspot";
 const int serverPort = 80;
 WiFiServer server(serverPort);
 // const char* bleServerName = "M5StickPlus";
@@ -27,7 +27,7 @@ float previousAccelY = 0;
 bool stepDetected = false;
 
 // MQTT setup
-const char* mqttServer = "192.168.4.49";
+const char* mqttServer = "192.168.116.30";
 const int mqttPort = 1883;
 const char* registrationTopic = "m5stick/registration";
 String deviceName = "M5StickPlus2";
