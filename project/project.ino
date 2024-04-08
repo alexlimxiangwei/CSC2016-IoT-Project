@@ -40,6 +40,16 @@ bool btnPreviouslyPressed = false;
 
 void IRAM_ATTR handleBtnPress() {
     emergency = true; // Set emergency to true immediately upon button press
+
+    M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.setTextColor(WHITE);
+    M5.Lcd.setRotation(3);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setCursor(10, 20);
+    M5.Lcd.println("EMERGENCY");
+    M5.Lcd.setCursor(10, 50);
+    M5.Lcd.println("ACTIVATED");
+
     digitalWrite (M5_LED, LOW);
     btnPressTime = millis();
 }
@@ -142,6 +152,16 @@ void loop() {
         // The button has been held for more than 1 second
         if (emergency) {
           emergency = false; // Deactivate emergency state
+          
+          M5.Lcd.fillScreen(BLACK);
+          M5.Lcd.setTextColor(WHITE);
+          M5.Lcd.setRotation(3);
+          M5.Lcd.setTextSize(2);
+          M5.Lcd.setCursor(10, 20);
+          M5.Lcd.println("Emergency");
+          M5.Lcd.setCursor(10, 50);
+          M5.Lcd.println("Deactivated");
+          
           digitalWrite(M5_LED, HIGH); // Optionally, turn off LED or indicator
           // Ensure this block doesn't run repeatedly while the button is held
           while(digitalRead(M5_BUTTON_HOME) == LOW) {
