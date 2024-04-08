@@ -30,7 +30,7 @@ bool stepDetected = false;
 const char* mqttServer = "192.168.116.30";
 const int mqttPort = 1883;
 const char* registrationTopic = "m5stick/registration";
-String deviceName = "Alex";
+String deviceName = "GrandmaTim";
 String ipAddress;
 
 WiFiClient espClient;
@@ -222,7 +222,7 @@ void sendResponse(WiFiClient& client, const String& response, const String& cont
 void loop() {
 
   if (!pubSubClient.connected()) {
-        reconnect();
+        // reconnect();
     } else {
         pubSubClient.loop(); // Make sure to call this regularly to process incoming messages and maintain the connection
         sendKeepAlive();
