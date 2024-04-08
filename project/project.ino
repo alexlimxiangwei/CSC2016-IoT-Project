@@ -4,8 +4,8 @@
 #include <PubSubClient.h>
 
 // WiFi and BLE configuration
-const char* ssid = "alix";
-const char* password = "hottestspot";
+const char* ssid = "Yikes";
+const char* password = "YeetusDeletus";
 const int serverPort = 80;
 WiFiServer server(serverPort);
 // const char* bleServerName = "M5StickPlus";
@@ -27,13 +27,22 @@ float previousAccelY = 0;
 bool stepDetected = false;
 
 // MQTT setup
-const char* mqttServer = "192.168.116.30";
+const char* mqttServer = "192.168.4.49";
 const int mqttPort = 1883;
 const char* registrationTopic = "m5stick/registration";
 String deviceName = "M5StickPlus2";
 
 WiFiClient espClient;
 PubSubClient pubSubClient(espClient);
+
+volatile unsigned long btnPressTime = 0;
+bool btnPreviouslyPressed = false;
+
+void IRAM_ATTR handleBtnPress() {
+    emergency = true; // Set emergency to true immediately upon button press
+    digitalWrite (M5_LED, LOW);
+    btnPressTime = millis();
+}
 
 void setup() {
   M5.begin();
@@ -42,6 +51,9 @@ void setup() {
   M5.IMU.SetAccelFsr(M5.IMU.AFS_16G);
   pinMode(M5_LED, OUTPUT);
   digitalWrite (M5_LED, HIGH);
+
+  pinMode(M5_BUTTON_HOME, INPUT_PULLUP); // Ensure the button is set to input with pull-up
+  attachInterrupt(digitalPinToInterrupt(M5_BUTTON_HOME), handleBtnPress, FALLING); // For button press
 
   // Initialize WiFi and BLE
   WiFi.begin(ssid, password);
@@ -75,9 +87,9 @@ String getSensorData() {
   M5.update();
 
   // Check if the main button is pressed
-  if (M5.BtnA.wasPressed()) {
-    emergency = !emergency;
-  }
+  // if (M5.BtnA.wasPressed()) {
+  //   emergency = !emergency;
+  // }
 
   // Fall detection
   float ax, ay, az;
@@ -119,6 +131,29 @@ void sendResponse(WiFiClient& client, const String& response, const String& cont
 
 
 void loop() {
+
+  bool btnPressed = digitalRead(M5_BUTTON_HOME) == LOW;
+  if (btnPressed) {
+      if (!btnPreviouslyPressed) {
+        // Button has just been pressed; record the time
+        btnPreviouslyPressed = true;
+        btnPressTime = millis();
+      } else if (millis() - btnPressTime >= 1000) {
+        // The button has been held for more than 1 second
+        if (emergency) {
+          emergency = false; // Deactivate emergency state
+          digitalWrite(M5_LED, HIGH); // Optionally, turn off LED or indicator
+          // Ensure this block doesn't run repeatedly while the button is held
+          while(digitalRead(M5_BUTTON_HOME) == LOW) {
+            delay(10); // Minimal delay to prevent blocking
+          }
+        }
+        btnPreviouslyPressed = false; // Reset the flag after handling
+      }
+    } else {
+      btnPreviouslyPressed = false; // Reset the flag if the button was released before 1 second
+    }
+
   WiFiClient client = server.available();
   if (client) {
     String request = client.readStringUntil('\r');

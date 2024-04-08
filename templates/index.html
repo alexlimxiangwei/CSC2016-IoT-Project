@@ -83,6 +83,18 @@
                     $('#fall-detected-' + deviceName).text(data[i].fall_detected);
                     $('#emergency-' + deviceName).text(data[i].emergency);
                     updateAlertButtonText(deviceName, data[i].alert);
+                    if(data[i].fall_detected == '1'){
+                        $('#reset-fall-' + deviceName).show();
+                    } else {
+                        $('#reset-fall-' + deviceName).hide();
+                    }
+    
+                    // Dynamically show or hide the reset button for emergency
+                    if(data[i].emergency == '1'){
+                        $('#reset-emergency-' + deviceName).show();
+                    } else {
+                        $('#reset-emergency-' + deviceName).hide();
+                    }
                 }
             });
         }
@@ -95,7 +107,7 @@
 
         function toggleValue(deviceName, deviceIp) {
             alertActive[deviceName] = !alertActive[deviceName];
-            updateAlertButtonText(deviceName);
+            updateAlertButtonText(deviceName, alertActive[deviceName]);
             $.post('/toggle_alert', { device_name: deviceName, alert: alertActive[deviceName], device_ip: deviceIp });
         }
 
@@ -126,14 +138,22 @@
         <div class="data-item">
             <span class="data-label">Fall Detected:</span>
             <span class="data-value" id="fall-detected-{{ device.device_name }}">{{ device.fall_detected }}</span>
-            <button class="reset-button" onclick="resetValue('{{ device.device_ip }}', 'fall')">Reset</button>
+            {% if device.fall_detected == '1' %}
+                <button id="reset-fall-{{ device.device_name }}" class="reset-button" onclick="resetValue('{{ device.device_ip }}', 'fall')">Reset</button>
+            {% else %}
+                <button id="reset-fall-{{ device.device_name }}" class="reset-button" onclick="resetValue('{{ device.device_ip }}', 'fall')" style="display:none;">Reset</button>
+            {% endif %}
         </div>
         <div class="data-item">
             <span class="data-label">Emergency:</span>
             <span class="data-value" id="emergency-{{ device.device_name }}">{{ device.emergency }}</span>
-            <button class="reset-button" onclick="resetValue('{{ device.device_ip }}', 'emergency')">Reset</button>
+            {% if device.emergency == '1' %}
+                <button id="reset-emergency-{{ device.device_name }}" class="reset-button" onclick="resetValue('{{ device.device_ip }}', 'emergency')">Reset</button>
+            {% else %}
+                <button id="reset-emergency-{{ device.device_name }}" class="reset-button" onclick="resetValue('{{ device.device_ip }}', 'emergency')" style="display:none;">Reset</button>
+            {% endif %}
         </div>
-        <button class="alert-button" id="alert-button-{{ device.device_name }}" onclick="toggleValue('{{ device.device_name }}', '{{ device.device_ip }}')" data-hover-text="Click to turn on the LED light on {{ device.device_name }}">Activate Alert</button>
+        <button class="alert-button" id="alert-button-{{ device.device_name }}" onclick="toggleValue('{{ device.device_name }}', '{{ device.device_ip }}')" data-hover-text="Click to turn on the LED light on {{ device.device_name }}"> {{buttonText}}</button>
     </div>
     {% endfor %}
 </body>
