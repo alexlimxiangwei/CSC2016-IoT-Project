@@ -11,7 +11,7 @@ WiFiServer server(serverPort);
 // const char* bleServerName = "M5StickPlus";
 
 // Fall detection threshold and variables
-const float FALL_THRESHOLD = 5; // Adjust this value based on your requirements
+const float FALL_THRESHOLD = 15; // Adjust this value based on your requirements
 bool fallDetected = false;
 
 // Emergency variable
@@ -40,17 +40,21 @@ volatile unsigned long btnPressTime = 0;
 bool btnPreviouslyPressed = false;
 bool emergencyUpdated = false;
 
-const unsigned long keepAliveInterval = 30000; // 30 seconds
+const unsigned long keepAliveInterval = 5000; // 5 seconds
 unsigned long lastKeepAliveTime = 0;
+unsigned long timeSinceLastStep = 0;
 
 void IRAM_ATTR handleBtnPress() {
+  if (!fallDetected){
     emergency = true; // Set emergency to true immediately upon button press
+  }
 }
 
 void sendKeepAlive() {
     if (millis() - lastKeepAliveTime > keepAliveInterval) {
-        String keepAliveMessage = "keepalive";
-        pubSubClient.publish((ipAddress + "/keepalive").c_str(), keepAliveMessage.c_str());
+        ipAddress = WiFi.localIP().toString();
+        String message = deviceName + "," + ipAddress;
+        pubSubClient.publish(registrationTopic, message.c_str());
         lastKeepAliveTime = millis();
     }
 }
@@ -121,7 +125,54 @@ void updateFallDetection(){
   if (sqrt(ax*ax + ay*ay + az*az) > FALL_THRESHOLD && !fallDetected) {
     fallDetected = true;
     pubSubClient.publish((ipAddress + "/fall").c_str(), String(fallDetected).c_str());
+    M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.setTextColor(WHITE);
+    M5.Lcd.setRotation(3);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setCursor(10, 20);
+    M5.Lcd.println("FALL");
+    M5.Lcd.setCursor(10, 50);
+    M5.Lcd.println("DETECTED");
+
+    digitalWrite (M5_LED, LOW);
   }
+
+  float accelY = ay;
+  float accelDiff = accelY - previousAccelY;
+
+  // Define both positive and negative thresholds for detecting a step
+  const float POSITIVE_STEP_THRESHOLD = 0.4; // Threshold for the step forward/upward motion
+  const float NEGATIVE_STEP_THRESHOLD = -0.4; // Threshold for the step settling/downward motion
+
+  // Track whether we've seen a positive motion, indicating the start of a potential step
+  static bool positiveMotionDetected = false;
+
+  if (!stepDetected && (millis() - timeSinceLastStep > 500)) {
+      if (accelDiff > POSITIVE_STEP_THRESHOLD) {
+          positiveMotionDetected = true;
+      } else if (positiveMotionDetected && accelDiff < NEGATIVE_STEP_THRESHOLD) {
+          // A step is detected only after a positive motion followed by a negative motion
+          stepCount++;
+          if (!emergency && !fallDetected){
+              M5.Lcd.fillScreen(BLACK);
+              M5.Lcd.setTextColor(WHITE);
+              M5.Lcd.setRotation(3);
+              M5.Lcd.setTextSize(2);
+              M5.Lcd.setCursor(10, 20);
+              M5.Lcd.print("Steps: ");
+              M5.Lcd.print(stepCount);
+          }
+          timeSinceLastStep = millis();
+          positiveMotionDetected = false; // Reset for the next step detection
+          stepDetected = true; // Optional: use this flag for additional logic as needed
+      }
+  } else if (stepDetected && accelDiff > NEGATIVE_STEP_THRESHOLD) {
+      stepDetected = false; // Ready to detect the next step
+  }
+  if (millis() - timeSinceLastStep > 50){
+    previousAccelY = accelY;
+  }
+
 }
 
 String getSensorData() {
@@ -206,9 +257,11 @@ void loop() {
         btnPressTime = millis();
       } else if (millis() - btnPressTime >= 1000) {
         // The button has been held for more than 1 second
-        if (emergency) {
+        if (emergency || fallDetected) {
           emergency = false; // Deactivate emergency state
+          fallDetected = false; // Deactivate fall state
           pubSubClient.publish((ipAddress + "/emergency").c_str(), String(emergency).c_str());
+          pubSubClient.publish((ipAddress + "/fall").c_str(), String(fallDetected).c_str());
           emergencyUpdated = false;
           
           M5.Lcd.fillScreen(BLACK);
@@ -219,6 +272,8 @@ void loop() {
           M5.Lcd.println("Emergency");
           M5.Lcd.setCursor(10, 50);
           M5.Lcd.println("Deactivated");
+
+          delay(1000);
           
           digitalWrite(M5_LED, HIGH); // Optionally, turn off LED or indicator
           // Ensure this block doesn't run repeatedly while the button is held
@@ -249,8 +304,8 @@ void loop() {
     } else if (request.startsWith("POST /fall")) {
       // Handle POST request to toggle emergency state
       fallDetected = false;
+      digitalWrite (M5_LED, HIGH);
       String response = "fallDetected state: " + String(fallDetected);
-      M5.Lcd.print("fallDetected state: " + String(fallDetected));
       sendResponse(client, response);
     } else if (request.startsWith("POST /toggle_alert")) {
       // Handle POST request to toggle alert state
@@ -260,6 +315,12 @@ void loop() {
       // Toggle the LED light based on the alert state
       if (alert) {
           digitalWrite (M5_LED, LOW);
+          M5.Lcd.fillScreen(BLACK);
+          M5.Lcd.setTextColor(WHITE);
+          M5.Lcd.setRotation(3);
+          M5.Lcd.setTextSize(2);
+          M5.Lcd.setCursor(10, 20);
+          M5.Lcd.println("ALERT!");
       } else {
         digitalWrite (M5_LED, HIGH);
       }
