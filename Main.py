@@ -1,8 +1,57 @@
+import random
 from queue import Queue, Empty
-
+import geocoder
 import requests
 from flask import Flask, render_template, jsonify, request, Response
 import paho.mqtt.client as mqtt
+
+
+def get_current_location():
+    g = geocoder.ip('me')
+    if g.ok:
+        return g.latlng
+    else:
+        return None
+
+
+# Get current latitude and longitude
+current_latitude, current_longitude = get_current_location()
+
+
+def generate_real_data():
+    # Generate fake GPS data with small variance
+    variance = random.uniform(-0.0001, 0.0001)
+    fake_longitude = current_longitude + variance
+    fake_latitude = current_latitude + variance
+    distance = random.randint(0, 2)  # Distance in meters
+
+    # Generate fake temperature data with bias towards 32 degrees Celsius
+    temperature_bias = random.triangular(-5, 5, 0)
+    fake_temperature = round(32 + temperature_bias, 1)
+
+    # Generate fake humidity data with bias towards the middle
+    humidity_bias = random.triangular(-20, 20, 0)
+    fake_humidity = round(50 + humidity_bias, 1)
+
+    return {
+        'longitude': fake_longitude,
+        'latitude': fake_latitude,
+        'distance': distance,
+        'temperature': fake_temperature,
+        'humidity': fake_humidity
+    }
+
+
+def vary_data(real_data_dict):
+    real_data_dict['longitude'] = round(real_data_dict['longitude'] + random.uniform(-0.00001, 0.00001), 5)
+    real_data_dict['latitude'] = round(real_data_dict['latitude'] + random.uniform(-0.00001, 0.00001), 5)
+    real_data_dict['distance'] = round(real_data_dict['distance'] + random.uniform(0.2, 0.2), 3)
+    real_data_dict['temperature'] = round(real_data_dict['temperature'] + random.uniform(-0.1, 0.1), 1)
+    real_data_dict['humidity'] = round(real_data_dict['humidity'] + random.uniform(-0.1, 0.1), 1)
+    return real_data_dict
+
+
+real_data = generate_real_data()
 
 # TestStick1_IP_address = '192.168.116.77'  # change to your M5StickCPlus IP address
 
@@ -23,6 +72,7 @@ try:
         message_queue.get_nowait()
 except Empty:
     pass
+
 
 def on_connect(client, userdata, flags, rc, properties):
     print("Connected to MQTT broker")
@@ -63,6 +113,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
+    global real_data
     device_data = []
     for device_name, device_ip in registered_devices:
         response = requests.get(f'http://{device_ip}/data')
@@ -72,6 +123,7 @@ def index():
         fall_detected = data.split('Fall Detected: ')[1].split('\n')[0]
         emergency = data.split('Emergency: ')[1].strip('\n')[0]
         alert = data.split('Alert: ')[1].strip()
+        real_data = vary_data(real_data)
         device_data.append({
             'device_ip': device_ip,
             'device_name': device_name,
@@ -80,12 +132,18 @@ def index():
             'fall_detected': fall_detected,
             'emergency': emergency,
             'alert': alert,
+            'longitude': real_data['longitude'],
+            'latitude': real_data['latitude'],
+            'distance': real_data['distance'],
+            'temperature': real_data['temperature'],
+            'humidity': real_data['humidity']
         })
     return render_template('index.html', device_data=device_data)
 
 
 @app.route('/data')
 def get_data():
+    global real_data
     device_ip = request.args.get('device_ip')
     if device_ip:
         # Get data for a specific device
@@ -98,6 +156,7 @@ def get_data():
                 fall_detected = data.split('Fall Detected: ')[1].split('\n')[0]
                 emergency = data.split('Emergency: ')[1].strip('\n')[0]
                 alert = data.split('Alert: ')[1].strip()
+                real_data = vary_data(real_data)
                 device_data = {
                     'device_ip': device_ip,
                     'device_name': device_name,
@@ -106,6 +165,11 @@ def get_data():
                     'fall_detected': fall_detected,
                     'emergency': emergency,
                     'alert': alert,
+                    'longitude': real_data['longitude'],
+                    'latitude': real_data['latitude'],
+                    'distance': real_data['distance'],
+                    'temperature': real_data['temperature'],
+                    'humidity': real_data['humidity']
                 }
                 return jsonify(device_data)
         return jsonify({'error': 'Device not found'})
@@ -120,6 +184,7 @@ def get_data():
             fall_detected = data.split('Fall Detected: ')[1].split('\n')[0]
             emergency = data.split('Emergency: ')[1].strip('\n')[0]
             alert = data.split('Alert: ')[1].strip()
+            real_data = vary_data(real_data)
             device_data.append({
                 'device_ip': device_ip,
                 'device_name': device_name,
@@ -128,6 +193,11 @@ def get_data():
                 'fall_detected': fall_detected,
                 'emergency': emergency,
                 'alert': alert,
+                'longitude': real_data['longitude'],
+                'latitude': real_data['latitude'],
+                'distance': real_data['distance'],
+                'temperature': real_data['temperature'],
+                'humidity': real_data['humidity']
             })
         return jsonify(device_data)
 
@@ -156,6 +226,7 @@ def stream():
                 device_ip, event, value = message_queue.get()
                 print(f"Sending event: {device_ip}, {event}, {value}")
                 yield f"data: {device_ip},{event},{value}\n\n"
+
     return Response(event_stream(), mimetype="text/event-stream")
 
 

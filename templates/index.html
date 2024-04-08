@@ -115,6 +115,11 @@
                 $('#step-count-' + deviceName).text(data.step_count);
                 $('#fall-detected-' + deviceName).text(data.fall_detected);
                 $('#emergency-' + deviceName).text(data.emergency);
+                $('#longitude-' + deviceName).text(data.longitude);
+                $('#latitude-' + deviceName).text(data.latitude);
+                $('#distance-' + deviceName).text(data.distance + ' meters');
+                $('#temperature-' + deviceName).text(data.temperature + '°C');
+                $('#humidity-' + deviceName).text(data.humidity + '%');
                 updateResetButton(deviceName, data.fall_detected, "reset-fall-" + deviceName);
                 updateResetButton(deviceName, data.emergency, "reset-emergency-" + deviceName);
             });
@@ -210,6 +215,26 @@
         <div class="data-item">
             <span class="data-label">Step Count:</span>
             <span class="data-value" id="step-count-{{ device.device_name }}">{{ device.step_count }}</span>
+        </div>
+                <div class="data-item">
+            <span class="data-label">Longitude:</span>
+            <span class="data-value" id="longitude-{{ device.device_name }}">{{ device.longitude }}</span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">Latitude:</span>
+            <span class="data-value" id="latitude-{{ device.device_name }}">{{ device.latitude }}</span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">Distance Away:</span>
+            <span class="data-value" id="distance-{{ device.device_name }}">{{ device.distance }} meters</span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">Temperature:</span>
+            <span class="data-value" id="temperature-{{ device.device_name }}">{{ device.temperature }}°C</span>
+        </div>
+        <div class="data-item">
+            <span class="data-label">Humidity:</span>
+            <span class="data-value" id="humidity-{{ device.device_name }}">{{ device.humidity }}%</span>
         </div>
         <div class="data-item">
             <span class="data-label">Fall Detected:</span>
