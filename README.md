@@ -4,6 +4,7 @@ pre installation:
 pip install -r requirements.txt
 
 1. start MQTT broker:
+cd to the directory where mosquitto.conf is located
 mosquitto -v -c mosquitto.conf
 
 2. start the web server:
