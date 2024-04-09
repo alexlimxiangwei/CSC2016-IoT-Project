@@ -169,6 +169,11 @@
             setInterval(updateData, 60000);// Update every minutes
             var eventSource = new EventSource('/stream');
             eventSource.onmessage = handleEvent;
+            // New: Listen for a 'new_device' event to trigger a page reload
+            eventSource.addEventListener('new_device', function() {
+                console.log('New device registered, reloading page.');
+                window.location.reload();
+            });
         });
 
         function updateResetButton(deviceName, value, buttonId) {

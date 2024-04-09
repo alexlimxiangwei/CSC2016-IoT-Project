@@ -87,6 +87,7 @@ def on_message(client, userdata, msg):
         if (device_name, device_ip) not in registered_devices:
             registered_devices.append((device_name, device_ip))
             print(f"Registered device: {device_name} - IP: {device_ip}")
+            message_queue.put(('system', 'new_device_registered', device_name))
             client.subscribe(f"{device_ip}/emergency")
             client.subscribe(f"{device_ip}/fall")
     else:
@@ -228,7 +229,10 @@ def stream():
                 if is_noise((device_ip, event, value)):
                     continue  # Skip this message if it's considered noise
                 print(f"Sending event: {device_ip}, {event}, {value}")
-                yield f"data: {device_ip},{event},{value}\n\n"
+                if event == 'new_device_registered':
+                    yield f"event: new_device\ndata: {value}\n\n"
+                else:
+                    yield f"data: {device_ip},{event},{value}\n\n"
             except Empty:
                 # The queue is empty; yield a keep-alive comment
                 yield ': keep-alive\n\n'
