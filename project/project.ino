@@ -4,8 +4,8 @@
 #include <PubSubClient.h>
 
 // WiFi and BLE configuration
-const char* ssid = "alix";
-const char* password = "hottestspot";
+const char* ssid = "Yikes";
+const char* password = "YeetusDeletus";
 const int serverPort = 80;
 WiFiServer server(serverPort);
 // const char* bleServerName = "M5StickPlus";
@@ -27,7 +27,7 @@ float previousAccelY = 0;
 bool stepDetected = false;
 
 // MQTT setup
-const char* mqttServer = "192.168.116.30";
+const char* mqttServer = "192.168.29.49";
 const int mqttPort = 1883;
 const char* registrationTopic = "m5stick/registration";
 String deviceName = "GrandmaTim";
@@ -62,7 +62,13 @@ void sendKeepAlive() {
 void reconnect() {
     // Loop until we're reconnected
     while (!pubSubClient.connected()) {
+        M5.Lcd.fillScreen(BLACK);
+        M5.Lcd.setTextColor(WHITE);
+        M5.Lcd.setRotation(3);
+        M5.Lcd.setTextSize(2);
+        M5.Lcd.setCursor(10, 20);
         M5.Lcd.println("Attempting MQTT connection...");
+        pubSubClient.setServer(mqttServer, mqttPort);
         // Attempt to connect
         if (pubSubClient.connect("M5StickClient")) {
             M5.Lcd.println("MQTT connected");
@@ -222,7 +228,7 @@ void sendResponse(WiFiClient& client, const String& response, const String& cont
 void loop() {
 
   if (!pubSubClient.connected()) {
-        // reconnect();
+        reconnect();
     } else {
         pubSubClient.loop(); // Make sure to call this regularly to process incoming messages and maintain the connection
         sendKeepAlive();
